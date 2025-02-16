@@ -30,10 +30,10 @@ contract SmartTurretSystem is System {
   using SmartCharacterUtils for bytes14;
 
   function isCeasefire(uint256 timestamp) public returns (bool) {
-    uint256 startTime = 1738281600; // Fri Jan 31 2025 00:00:00 GMT+0000
-    uint256 endTime = 1738454399; // Sat Feb 01 2025 23:59:59 GMT+0000
+    uint256 startTime = 1740096000; // Fri Feb 21 2025 00:00:00 GMT+0000
+    uint256 endTime = 1740355199; // Sun Feb 23 2025 23:59:59 GMT+0000
 
-    if (timestamp > startTime && timestamp < endTime) {
+    if (timestamp >= startTime && timestamp <= endTime) {
       return true;
     }
   }
@@ -53,6 +53,11 @@ contract SmartTurretSystem is System {
     Turret memory turret,
     SmartTurretTarget memory turretTarget
   ) public returns (TargetPriority[] memory updatedPriorityQueue) {
+    if (turretTarget.shipTypeId == 81610) {
+      updatedPriorityQueue = priorityQueue;
+      return updatedPriorityQueue;
+    }
+
     uint256 turretTargetCorp = CharactersTable.getCorpId(turretTarget.characterId);
     uint256 smartTurretOwnerCorp = CharactersTable.getCorpId(characterId);
 

@@ -185,23 +185,8 @@ contract SmartTurretTest is MudTest {
     TargetPriority[] memory priorityQueue = new TargetPriority[](1);
     Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
 
-    SmartTurretTarget memory turretTarget = SmartTurretTarget({
-      shipId: 1,
-      shipTypeId: 1,
-      characterId: testCharacterId3,
-      hpRatio: 100,
-      shieldRatio: 100,
-      armorRatio: 100
-    });
-
-    SmartTurretTarget memory turretTarget2 = SmartTurretTarget({
-      shipId: 2,
-      shipTypeId: 2,
-      characterId: testCharacterId2,
-      hpRatio: 100,
-      shieldRatio: 100,
-      armorRatio: 100
-    });
+    SmartTurretTarget memory turretTarget = SmartTurretTarget({ shipId: 1, shipTypeId: 1, characterId: testCharacterId3, hpRatio: 100, shieldRatio: 100, armorRatio: 100 });
+    SmartTurretTarget memory turretTarget2 = SmartTurretTarget({ shipId: 2, shipTypeId: 2, characterId: testCharacterId2, hpRatio: 100, shieldRatio: 100, armorRatio: 100 });
 
     priorityQueue[0] = TargetPriority({ target: turretTarget, weight: 100 });
 
@@ -238,20 +223,35 @@ contract SmartTurretTest is MudTest {
     _testImmuneCharacterInProximity(testReapersIVCharacterId);
   }
 
+    //Test inProximity
+  function testInProximityOnWreck() public {
+    //Execute inProximity view function and see what it returns
+    TargetPriority[] memory priorityQueue = new TargetPriority[](0);
+    Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
+    SmartTurretTarget memory turretTarget = SmartTurretTarget({ shipId: 1, shipTypeId: 81610, characterId: testCharacterId3, hpRatio: 100, shieldRatio: 100, armorRatio: 100 });
+
+    //Run inProximity
+    TargetPriority[] memory returnTargetQueue = abi.decode(
+      world.call(
+        systemId,
+        abi.encodeCall(
+          SmartTurretSystem.inProximity,
+          (smartTurretId, testCharacterId, priorityQueue, turret, turretTarget)
+        )
+      ),
+      (TargetPriority[])
+    );
+
+    assertEq(returnTargetQueue.length, 0, "Target length should now equal 0");
+  }
+
   //Test inProximity
   function _testImmuneCharacterInProximity(uint256 characterId) private {
     //Execute inProximity view function and see what it returns
     TargetPriority[] memory priorityQueue = new TargetPriority[](1);
     Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
 
-    SmartTurretTarget memory turretTarget = SmartTurretTarget({
-      shipId: 1,
-      shipTypeId: 1,
-      characterId: characterId,
-      hpRatio: 100,
-      shieldRatio: 100,
-      armorRatio: 100
-    });
+    SmartTurretTarget memory turretTarget = SmartTurretTarget({ shipId: 1, shipTypeId: 1, characterId: characterId, hpRatio: 100, shieldRatio: 100, armorRatio: 100 });
 
     priorityQueue[0] = TargetPriority({ target: turretTarget, weight: 100 });
 
@@ -276,30 +276,9 @@ contract SmartTurretTest is MudTest {
   function testAggression() public {
     TargetPriority[] memory priorityQueue = new TargetPriority[](1);
     Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
-    SmartTurretTarget memory turretTarget = SmartTurretTarget({
-      shipId: 1,
-      shipTypeId: 1,
-      characterId: testCharacterId3,
-      hpRatio: 50,
-      shieldRatio: 50,
-      armorRatio: 50
-    });
-    SmartTurretTarget memory aggressor = SmartTurretTarget({
-      shipId: 1,
-      shipTypeId: 1,
-      characterId: testCharacterId4,
-      hpRatio: 100,
-      shieldRatio: 100,
-      armorRatio: 100
-    });
-    SmartTurretTarget memory victim = SmartTurretTarget({
-      shipId: 1,
-      shipTypeId: 1,
-      characterId: testCharacterId5,
-      hpRatio: 80,
-      shieldRatio: 100,
-      armorRatio: 100
-    });
+    SmartTurretTarget memory turretTarget = SmartTurretTarget({ shipId: 1, shipTypeId: 1, characterId: testCharacterId3, hpRatio: 50, shieldRatio: 50, armorRatio: 50 });
+    SmartTurretTarget memory aggressor = SmartTurretTarget({ shipId: 1, shipTypeId: 1, characterId: testCharacterId4, hpRatio: 100, shieldRatio: 100, armorRatio: 100 });
+    SmartTurretTarget memory victim = SmartTurretTarget({ shipId: 1, shipTypeId: 1, characterId: testCharacterId5, hpRatio: 80, shieldRatio: 100, armorRatio: 100 });
 
     priorityQueue[0] = TargetPriority({ target: turretTarget, weight: 100 });
 
@@ -324,35 +303,14 @@ contract SmartTurretTest is MudTest {
     TargetPriority[] memory priorityQueue = new TargetPriority[](1);
     Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
 
-    SmartTurretTarget memory originalTarget = SmartTurretTarget({
-      shipId: 1,
-      shipTypeId: 1,
-      characterId: testCharacterId,
-      hpRatio: 100,
-      shieldRatio: 100,
-      armorRatio: 100
-    });
+    SmartTurretTarget memory originalTarget = SmartTurretTarget({ shipId: 1, shipTypeId: 1, characterId: testCharacterId, hpRatio: 100, shieldRatio: 100, armorRatio: 100 });
     priorityQueue[0] = TargetPriority({ target: originalTarget, weight: 100 });
 
     // Aggressor from Reapers (98000004)
-    SmartTurretTarget memory aggressor = SmartTurretTarget({
-      shipId: 1,
-      shipTypeId: 1,
-      characterId: testReapersCharacterId,
-      hpRatio: 100,
-      shieldRatio: 100,
-      armorRatio: 100
-    });
+    SmartTurretTarget memory aggressor = SmartTurretTarget({ shipId: 1, shipTypeId: 1, characterId: testReapersCharacterId, hpRatio: 100, shieldRatio: 100, armorRatio: 100 });
 
     // any victim
-    SmartTurretTarget memory victim = SmartTurretTarget({
-      shipId: 1,
-      shipTypeId: 1,
-      characterId: 5555,
-      hpRatio: 100,
-      shieldRatio: 100,
-      armorRatio: 100
-    });
+    SmartTurretTarget memory victim = SmartTurretTarget({ shipId: 1, shipTypeId: 1, characterId: 5555, hpRatio: 100, shieldRatio: 100, armorRatio: 100 });
 
     TargetPriority[] memory returnTargetQueue = abi.decode(
       world.call(
@@ -370,31 +328,31 @@ contract SmartTurretTest is MudTest {
   }
 
   function testBeforeCeasefire() public {
-    uint256 testTime = 1738163233; // Wed Jan 29 2025 15:07:13 GMT+0000
+    uint256 testTime = 1740095999; // Wed Jan 29 2025 15:07:13 GMT+0000
     bool result = abi.decode(world.call(systemId, abi.encodeCall(SmartTurretSystem.isCeasefire, (testTime))), (bool));
     assertFalse(result);
   }
 
   function testEarlyBoundryOfCeasefire() public {
-    uint256 testTime = 1738281660; // Fri Jan 31 2025 00:01:00 GMT+0000
+    uint256 testTime = 1740096000; // Fri Feb 21 2025 00:00:00 GMT+0000
     bool result = abi.decode(world.call(systemId, abi.encodeCall(SmartTurretSystem.isCeasefire, (testTime))), (bool));
     assertTrue(result);
   }
 
   function testMidpointOfCeasefire() public {
-    uint256 testTime = 1738368000; // Sat Feb 01 2025 00:00:00 GMT+0000
+    uint256 testTime = 1740247200; // Sat Feb 22 2025 18:00:00 GMT+0000
     bool result = abi.decode(world.call(systemId, abi.encodeCall(SmartTurretSystem.isCeasefire, (testTime))), (bool));
     assertTrue(result);
   }
 
   function testLateBoundryOfCeasefire() public {
-    uint256 testTime = 1738454280; // Sat Feb 01 2025 23:58:00 GMT+0000
+    uint256 testTime = 1740355199; // Sun Feb 23 2025 23:59:59 GMT+0000
     bool result = abi.decode(world.call(systemId, abi.encodeCall(SmartTurretSystem.isCeasefire, (testTime))), (bool));
     assertTrue(result);
   }
 
   function testAfterCeasefire() public {
-    uint256 testTime = 1738454460; // Sat Feb 01 2025 23:58:00 GMT+0000
+    uint256 testTime = 1740398400; // Mon Feb 24 2025 12:00:00 GMT+0000
     bool result = abi.decode(world.call(systemId, abi.encodeCall(SmartTurretSystem.isCeasefire, (testTime))), (bool));
     assertFalse(result);
   }
