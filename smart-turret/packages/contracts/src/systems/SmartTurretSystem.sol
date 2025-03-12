@@ -29,7 +29,7 @@ contract SmartTurretSystem is System {
   using SmartDeployableUtils for bytes14;
   using SmartCharacterUtils for bytes14;
 
-  function isCeasefire(uint256 timestamp) public returns (bool) {
+  function isCeasefire(uint256 timestamp) public pure returns (bool) {
     uint256 startTime = 1740096000; // Fri Feb 21 2025 00:00:00 GMT+0000
     uint256 endTime = 1740355199; // Sun Feb 23 2025 23:59:59 GMT+0000
 
@@ -134,23 +134,18 @@ contract SmartTurretSystem is System {
   }
 
   function isReapersCorp(uint256 targetCorp) internal pure returns (bool) {
-    if (targetCorp == 98000004) {
+    if (targetCorp == 98000003) {
       // Reapers
       return true;
     }
 
-    if (targetCorp == 98000067) {
+    if (targetCorp == 98000006) {
       // Reapers II
       return true;
     }
 
-    if (targetCorp == 98000104) {
+    if (targetCorp == 98000018) {
       // Reapers III
-      return true;
-    }
-
-    if (targetCorp == 98000187) {
-      // Reapers IV
       return true;
     }
 

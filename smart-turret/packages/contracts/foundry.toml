@@ -29,7 +29,7 @@ eth_rpc_url = "http://127.0.0.1:8546"
 
 [profile.garnet]
 # Public Testnet
-eth_rpc_url = "https://rpc.garnetchain.com"
+eth_rpc_url = "https://pyrope-external-rpc.live.tech.evefrontier.com"
 
 [profile.redstone]
 # Public Mainnet

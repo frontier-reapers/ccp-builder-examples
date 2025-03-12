@@ -132,7 +132,7 @@ contract SmartTurretTest is MudTest {
     smartCharacter.createCharacter(
       testReapersCharacterId,
       address(0x333),
-      98000004, // Reapers
+      98000003, // Reapers
       CharacterEntityRecord({ typeId: 123, itemId: 234, volume: 100 }),
       EntityRecordOffchainTableData({ name: "reaperChar", dappURL: "none", description: "test" }),
       ""
@@ -141,7 +141,7 @@ contract SmartTurretTest is MudTest {
     smartCharacter.createCharacter(
       testReapersIICharacterId,
       address(0x444),
-      98000067, // Reapers II
+      98000006, // Reapers II
       CharacterEntityRecord({ typeId: 123, itemId: 234, volume: 100 }),
       EntityRecordOffchainTableData({ name: "reaper2Char", dappURL: "none", description: "test" }),
       ""
@@ -150,20 +150,20 @@ contract SmartTurretTest is MudTest {
     smartCharacter.createCharacter(
       testReapersIIICharacterId,
       address(0x555),
-      98000104, // Reapers III
+      98000018, // Reapers III
       CharacterEntityRecord({ typeId: 123, itemId: 234, volume: 100 }),
       EntityRecordOffchainTableData({ name: "reaper3Char", dappURL: "none", description: "test" }),
       ""
     );
 
-    smartCharacter.createCharacter(
-      testReapersIVCharacterId,
-      address(0x666),
-      98000187, // Reapers IV
-      CharacterEntityRecord({ typeId: 123, itemId: 234, volume: 100 }),
-      EntityRecordOffchainTableData({ name: "reaper4Char", dappURL: "none", description: "test" }),
-      ""
-    );
+    // smartCharacter.createCharacter(
+    //   testReapersIVCharacterId,
+    //   address(0x666),
+    //   98000187, // Reapers IV
+    //   CharacterEntityRecord({ typeId: 123, itemId: 234, volume: 100 }),
+    //   EntityRecordOffchainTableData({ name: "reaper4Char", dappURL: "none", description: "test" }),
+    //   ""
+    // );
 
     smartTurretId = vm.envUint("SMART_TURRET_ID");
     createAnchorAndOnline(smartTurretId, admin);
@@ -186,7 +186,6 @@ contract SmartTurretTest is MudTest {
     Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
 
     SmartTurretTarget memory turretTarget = SmartTurretTarget({ shipId: 1, shipTypeId: 1, characterId: testCharacterId3, hpRatio: 100, shieldRatio: 100, armorRatio: 100 });
-    SmartTurretTarget memory turretTarget2 = SmartTurretTarget({ shipId: 2, shipTypeId: 2, characterId: testCharacterId2, hpRatio: 100, shieldRatio: 100, armorRatio: 100 });
 
     priorityQueue[0] = TargetPriority({ target: turretTarget, weight: 100 });
 
@@ -219,9 +218,9 @@ contract SmartTurretTest is MudTest {
     _testImmuneCharacterInProximity(testReapersIIICharacterId);
   }
 
-  function testReapersIVInProximity() public {
-    _testImmuneCharacterInProximity(testReapersIVCharacterId);
-  }
+  // function testReapersIVInProximity() public {
+  //   _testImmuneCharacterInProximity(testReapersIVCharacterId);
+  // }
 
     //Test inProximity
   function testInProximityOnWreck() public {
