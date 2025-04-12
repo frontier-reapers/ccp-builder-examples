@@ -132,7 +132,7 @@ contract SmartTurretTest is MudTest {
     smartCharacter.createCharacter(
       testReapersCharacterId,
       address(0x333),
-      98000003, // Reapers
+      98000002, // Reapers
       CharacterEntityRecord({ typeId: 123, itemId: 234, volume: 100 }),
       EntityRecordOffchainTableData({ name: "reaperChar", dappURL: "none", description: "test" }),
       ""
@@ -210,13 +210,13 @@ contract SmartTurretTest is MudTest {
     _testImmuneCharacterInProximity(testReapersCharacterId);
   }
 
-  function testReapersIIInProximity() public {
-    _testImmuneCharacterInProximity(testReapersIICharacterId);
-  }
+  // function testReapersIIInProximity() public {
+  //   _testImmuneCharacterInProximity(testReapersIICharacterId);
+  // }
 
-  function testReapersIIIInProximity() public {
-    _testImmuneCharacterInProximity(testReapersIIICharacterId);
-  }
+  // function testReapersIIIInProximity() public {
+  //   _testImmuneCharacterInProximity(testReapersIIICharacterId);
+  // }
 
   // function testReapersIVInProximity() public {
   //   _testImmuneCharacterInProximity(testReapersIVCharacterId);

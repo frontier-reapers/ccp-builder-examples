@@ -134,20 +134,20 @@ contract SmartTurretSystem is System {
   }
 
   function isReapersCorp(uint256 targetCorp) internal pure returns (bool) {
-    if (targetCorp == 98000003) {
+    if (targetCorp == 98000002) {
       // Reapers
       return true;
     }
 
-    if (targetCorp == 98000006) {
-      // Reapers II
-      return true;
-    }
+    // if (targetCorp == 98000006) {
+    //   // Reapers II
+    //   return true;
+    // }
 
-    if (targetCorp == 98000018) {
-      // Reapers III
-      return true;
-    }
+    // if (targetCorp == 98000018) {
+    //   // Reapers III
+    //   return true;
+    // }
 
     return false;
   }
