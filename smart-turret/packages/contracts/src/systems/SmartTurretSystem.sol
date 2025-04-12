@@ -139,10 +139,10 @@ contract SmartTurretSystem is System {
       return true;
     }
 
-    // if (targetCorp == 98000006) {
-    //   // Reapers II
-    //   return true;
-    // }
+    if (targetCorp == 98000003) {
+      // EXTI
+      return true;
+    }
 
     // if (targetCorp == 98000018) {
     //   // Reapers III
