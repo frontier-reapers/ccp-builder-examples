@@ -99,6 +99,7 @@ contract SmartTurretTest is MudTest {
         ""
       );
     }
+
     if (CharactersByAddressTable.get(player) == 0) {
       smartCharacter.createCharacter(
         456,
@@ -187,7 +188,7 @@ contract SmartTurretTest is MudTest {
 
     SmartTurretTarget memory turretTarget = SmartTurretTarget({ shipId: 1, shipTypeId: 1, characterId: testCharacterId3, hpRatio: 100, shieldRatio: 100, armorRatio: 100 });
 
-    priorityQueue[0] = TargetPriority({ target: turretTarget, weight: 100 });
+    priorityQueue[0] = TargetPriority({ target: SmartTurretTarget({ shipId: 99, shipTypeId: 1, characterId: testCharacterId3, hpRatio: 100, shieldRatio: 100, armorRatio: 100 }), weight: 100 });
 
     //Run inProximity
     TargetPriority[] memory returnTargetQueue = abi.decode(
@@ -210,19 +211,7 @@ contract SmartTurretTest is MudTest {
     _testImmuneCharacterInProximity(testReapersCharacterId);
   }
 
-  // function testReapersIIInProximity() public {
-  //   _testImmuneCharacterInProximity(testReapersIICharacterId);
-  // }
-
-  // function testReapersIIIInProximity() public {
-  //   _testImmuneCharacterInProximity(testReapersIIICharacterId);
-  // }
-
-  // function testReapersIVInProximity() public {
-  //   _testImmuneCharacterInProximity(testReapersIVCharacterId);
-  // }
-
-    //Test inProximity
+  //Test inProximity
   function testInProximityOnWreck() public {
     //Execute inProximity view function and see what it returns
     TargetPriority[] memory priorityQueue = new TargetPriority[](0);
@@ -242,6 +231,49 @@ contract SmartTurretTest is MudTest {
     );
 
     assertEq(returnTargetQueue.length, 0, "Target length should now equal 0");
+  }
+
+  function testInProximityOnSepulchre() public {
+    //Execute inProximity view function and see what it returns
+    TargetPriority[] memory priorityQueue = new TargetPriority[](0);
+    Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
+    SmartTurretTarget memory turretTarget = SmartTurretTarget({ shipId: 1, shipTypeId: 87568, characterId: testCharacterId3, hpRatio: 100, shieldRatio: 100, armorRatio: 100 });
+
+    //Run inProximity
+    TargetPriority[] memory returnTargetQueue = abi.decode(
+      world.call(
+        systemId,
+        abi.encodeCall(
+          SmartTurretSystem.inProximity,
+          (smartTurretId, testCharacterId, priorityQueue, turret, turretTarget)
+        )
+      ),
+      (TargetPriority[])
+    );
+
+    assertEq(returnTargetQueue.length, 0, "Target length should now equal 0");
+  }
+
+  function testShipAlreadyInPriorityQueue() public {
+    //Execute inProximity view function and see what it returns
+    TargetPriority[] memory priorityQueue = new TargetPriority[](1);
+    priorityQueue[0] = TargetPriority({ target: SmartTurretTarget({ shipId: 1, shipTypeId: 99999, characterId: testCharacterId3, hpRatio: 100, shieldRatio: 100, armorRatio: 100 }), weight: 100 });
+    Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
+    SmartTurretTarget memory turretTarget = SmartTurretTarget({ shipId: 1, shipTypeId: 99999, characterId: testCharacterId3, hpRatio: 100, shieldRatio: 100, armorRatio: 100 });
+
+    //Run inProximity
+    TargetPriority[] memory returnTargetQueue = abi.decode(
+      world.call(
+        systemId,
+        abi.encodeCall(
+          SmartTurretSystem.inProximity,
+          (smartTurretId, testCharacterId, priorityQueue, turret, turretTarget)
+        )
+      ),
+      (TargetPriority[])
+    );
+
+    assertEq(returnTargetQueue.length, 1, "Target length should now equal 1");
   }
 
   //Test inProximity
@@ -275,11 +307,10 @@ contract SmartTurretTest is MudTest {
   function testAggression() public {
     TargetPriority[] memory priorityQueue = new TargetPriority[](1);
     Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
-    SmartTurretTarget memory turretTarget = SmartTurretTarget({ shipId: 1, shipTypeId: 1, characterId: testCharacterId3, hpRatio: 50, shieldRatio: 50, armorRatio: 50 });
     SmartTurretTarget memory aggressor = SmartTurretTarget({ shipId: 1, shipTypeId: 1, characterId: testCharacterId4, hpRatio: 100, shieldRatio: 100, armorRatio: 100 });
     SmartTurretTarget memory victim = SmartTurretTarget({ shipId: 1, shipTypeId: 1, characterId: testCharacterId5, hpRatio: 80, shieldRatio: 100, armorRatio: 100 });
 
-    priorityQueue[0] = TargetPriority({ target: turretTarget, weight: 100 });
+    priorityQueue[0] = TargetPriority({ target: SmartTurretTarget({ shipId: 99, shipTypeId: 1, characterId: testCharacterId3, hpRatio: 100, shieldRatio: 100, armorRatio: 100 }), weight: 100 });
 
     //Run aggression
     TargetPriority[] memory returnTargetQueue = abi.decode(
@@ -297,6 +328,32 @@ contract SmartTurretTest is MudTest {
     assertEq(returnTargetQueue[0].weight, 1, "New target is at the beginning of the queue and has weight 1");
     assertEq(returnTargetQueue[1].weight, 100, "Old target should have shifted down");
   }
+
+  //Test aggression
+  function testRemoval() public {
+    TargetPriority[] memory priorityQueue = new TargetPriority[](1);
+    Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
+    SmartTurretTarget memory aggressor = SmartTurretTarget({ shipId: 1, shipTypeId: 1, characterId: testCharacterId4, hpRatio: 100, shieldRatio: 100, armorRatio: 100 });
+    SmartTurretTarget memory victim = SmartTurretTarget({ shipId: 2, shipTypeId: 1, characterId: testCharacterId5, hpRatio: 80, shieldRatio: 100, armorRatio: 100 });
+
+    priorityQueue[0] = TargetPriority({ target: SmartTurretTarget({ shipId: 99, shipTypeId: 87568, characterId: testCharacterId3, hpRatio: 100, shieldRatio: 100, armorRatio: 100 }), weight: 100 });
+
+    //Run aggression
+    TargetPriority[] memory returnTargetQueue = abi.decode(
+      world.call(
+        systemId,
+        abi.encodeCall(
+          SmartTurretSystem.aggression,
+          (smartTurretId, testCharacterId, priorityQueue, turret, aggressor, victim)
+        )
+      ),
+      (TargetPriority[])
+    );
+
+    assertEq(returnTargetQueue[0].target.shipId, 1, "aggressor replaced, because Sepulchre should not be targeted.");
+    assertEq(returnTargetQueue.length, 1, "Target length should still equal 1");
+  }
+
 
   function testAggressionFromCorp() public {
     TargetPriority[] memory priorityQueue = new TargetPriority[](1);

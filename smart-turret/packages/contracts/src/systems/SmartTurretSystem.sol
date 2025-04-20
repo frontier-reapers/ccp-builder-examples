@@ -21,6 +21,8 @@ import { Utils as SmartCharacterUtils } from "@eveworld/world/src/modules/smart-
 import { CharactersTableData, CharactersTable } from "@eveworld/world/src/codegen/tables/CharactersTable.sol";
 import { TargetPriority, Turret, SmartTurretTarget } from "@eveworld/world/src/modules/smart-turret/types.sol";
 
+import {console} from "forge-std/console.sol";
+
 /**
  * @dev This contract is an example for implementing logic to a smart turret
  */
@@ -53,42 +55,23 @@ contract SmartTurretSystem is System {
     Turret memory turret,
     SmartTurretTarget memory turretTarget
   ) public returns (TargetPriority[] memory updatedPriorityQueue) {
-    if (turretTarget.shipTypeId == 81610) {
-      updatedPriorityQueue = priorityQueue;
+    if (isResetMode() || isCeasefire(block.timestamp)) {
+      updatedPriorityQueue = new TargetPriority[](0);
       return updatedPriorityQueue;
     }
 
     uint256 turretTargetCorp = CharactersTable.getCorpId(turretTarget.characterId);
     uint256 smartTurretOwnerCorp = CharactersTable.getCorpId(characterId);
 
-    if (isCeasefire(block.timestamp)) {
-      updatedPriorityQueue = priorityQueue;
-      return updatedPriorityQueue;
-    }
-
-    if (isReapersCorp(turretTargetCorp)) {
-      // Reapers
-      // do not add to targeting
-      updatedPriorityQueue = priorityQueue;
-      return updatedPriorityQueue;
-    }
-
-    if (turretTargetCorp == smartTurretOwnerCorp) {
+    if (isAllowedTypeId(turretTarget.shipTypeId) || isReapersCorp(turretTargetCorp) || turretTargetCorp == smartTurretOwnerCorp) {
       // do not add to targeting
       updatedPriorityQueue = priorityQueue;
       return updatedPriorityQueue;
     }
 
     // we didn't early return so therefore we target
-    updatedPriorityQueue = new TargetPriority[](priorityQueue.length + 1);
-    for (uint256 i = 0; i < priorityQueue.length; i++) {
-      updatedPriorityQueue[i + 1] = priorityQueue[i];
-    }
-
-    // should the weight be 1? or the heighest of all weights in the array ?
-    updatedPriorityQueue[0] = TargetPriority({ target: turretTarget, weight: 1 });
-    return updatedPriorityQueue;
-  }
+    return addToPriorityQueue(priorityQueue, turretTarget);
+ }
 
   /**
    * @dev a function to implement logic for smart turret based on aggression
@@ -107,29 +90,68 @@ contract SmartTurretSystem is System {
     SmartTurretTarget memory aggressor,
     SmartTurretTarget memory victim
   ) public returns (TargetPriority[] memory updatedPriorityQueue) {
-    uint256 agressorCorp = CharactersTable.getCorpId(aggressor.characterId);
+
+    if (isResetMode()) {
+      return new TargetPriority[](0);
+    }
+
+    uint256 aggressorCorp = CharactersTable.getCorpId(aggressor.characterId);
     uint256 smartTurretOwnerCorp = CharactersTable.getCorpId(characterId);
 
-    if (isReapersCorp(agressorCorp)) {
-      // do not add to targeting
-      updatedPriorityQueue = priorityQueue;
-      return updatedPriorityQueue;
+    if (isReapersCorp(aggressorCorp) || isAllowedTypeId(aggressor.shipTypeId) || aggressorCorp == smartTurretOwnerCorp) {
+      return priorityQueue; // do not add to targeting
     }
-
-    if (agressorCorp == smartTurretOwnerCorp) {
-      // do not add to targeting
-      updatedPriorityQueue = priorityQueue;
-      return updatedPriorityQueue;
-    }
-
+    
     // we didn't early return so therefore we target
-    updatedPriorityQueue = new TargetPriority[](priorityQueue.length + 1);
+    return addToPriorityQueue(priorityQueue, aggressor);
+ }
+
+  function isResetMode() internal pure returns (bool) {
+    return false;
+  }
+
+  function filterQueue(TargetPriority[] memory priorityQueue) internal view returns (TargetPriority[] memory filteredPriorityQueue) {
+    TargetPriority[] memory filteredQueue = new TargetPriority[](priorityQueue.length);
+    uint256 filteredIndex = 0;
     for (uint256 i = 0; i < priorityQueue.length; i++) {
-      updatedPriorityQueue[i + 1] = priorityQueue[i];
+      uint256 corpId = CharactersTable.getCorpId(priorityQueue[i].target.characterId);
+      if (isReapersCorp(corpId) || isAllowedTypeId(priorityQueue[i].target.shipTypeId)) {
+        // do not add to targeting
+        continue;
+      }
+      filteredQueue[filteredIndex] = priorityQueue[i];
+      filteredIndex++;
     }
 
-    // should the weight be 1? or the heighest of all weights in the array ?
-    updatedPriorityQueue[0] = TargetPriority({ target: aggressor, weight: 1 });
+    filteredPriorityQueue = new TargetPriority[](filteredIndex);
+    for (uint256 i = 0; i < filteredIndex; i++) {
+      filteredPriorityQueue[i] = filteredQueue[i];
+    }
+
+    return filteredPriorityQueue;
+  }
+
+  function addToPriorityQueue(TargetPriority[] memory priorityQueue, SmartTurretTarget memory turretTarget) internal view returns (TargetPriority[] memory updatedPriorityQueue) {
+    // check if the target is already in the priority queue
+    for (uint256 i = 0; i < priorityQueue.length; i++) {
+      if (priorityQueue[i].target.shipId == turretTarget.shipId) {
+        // do not add to targeting
+        updatedPriorityQueue = priorityQueue;
+        return updatedPriorityQueue;
+      }
+    }
+
+    // copy the array with an offset of 1
+    TargetPriority[] memory intermediateQueue = new TargetPriority[](priorityQueue.length + 1);
+    for (uint256 i = 0; i < priorityQueue.length; i++) {
+      intermediateQueue[i + 1] = priorityQueue[i];
+    }
+
+    // should the weight be 1? or the highest of all weights in the array ?
+    intermediateQueue[0] = TargetPriority({ target: turretTarget, weight: 1 });
+
+    updatedPriorityQueue = filterQueue(intermediateQueue);
+
     return updatedPriorityQueue;
   }
 
@@ -144,10 +166,19 @@ contract SmartTurretSystem is System {
       return true;
     }
 
-    // if (targetCorp == 98000018) {
-    //   // Reapers III
-    //   return true;
-    // }
+    return false;
+  }
+
+  function isAllowedTypeId(uint256 targetTypeId) internal pure returns (bool) {
+    if (targetTypeId == 87568) {
+      // Sepulchre
+      return true;
+    }
+
+    if (targetTypeId == 81610) {
+      // Wreck
+      return true;
+    }
 
     return false;
   }
