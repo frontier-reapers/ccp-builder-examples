@@ -166,6 +166,11 @@ contract SmartTurretSystem is System {
       return true;
     }
 
+    if (targetCorp == 98000012) {
+      // EXTI2
+      return true;
+    }
+
     return false;
   }
 
