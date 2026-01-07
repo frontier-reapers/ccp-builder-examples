@@ -32,7 +32,6 @@ import { Utils } from "../src/systems/Utils.sol";
 
 import { SmartTurretSystem as CustomSmartTurretSystem } from "../src/systems/SmartTurretSystem.sol";
 
-import { TurretAllowlist } from "../src/codegen/tables/TurretAllowlist.sol";
 import { AggressionParams } from "@eveworld/world-v2/src/namespaces/evefrontier/systems/smart-turret/types.sol";
 
 contract SmartTurretTest is MudTest {
@@ -131,15 +130,6 @@ contract SmartTurretTest is MudTest {
       createAnchorAndOnline(smartTurretId, SOURCE_GATE_ID, player);
     }
 
-    // Set allowed tribe AFTER the turret is created (must be called by turret owner = player)
-    world.call(
-      systemId,
-      abi.encodeCall(
-        CustomSmartTurretSystem.setAllowedTribe,
-        (smartTurretId, ALLOWED_TRIBE_ID)
-      )
-    );
-
     vm.stopPrank();
   }
 
@@ -151,62 +141,6 @@ contract SmartTurretTest is MudTest {
       codeSize := extcodesize(addr)
     }
     assertTrue(codeSize > 0);
-  }
-
-  //Test setAllowedTribe
-  function testSetAllowedTribe() public {    
-    vm.startPrank(player);  // player is the turret owner
-
-    world.call(
-      systemId,
-      abi.encodeCall(
-        CustomSmartTurretSystem.setAllowedTribe,
-        (smartTurretId, 2000)
-      )
-    );
-
-    uint256 fetchedAllowedTribeID = TurretAllowlist.get();
-
-    assertEq(fetchedAllowedTribeID, 2000, "Allowed Tribe ID should be set to 2000");
-  }
-
-  //Test setAllowedTribe to make sure that people without admin access to the namespace cannot set the allowed tribeoration ID
-  function testSetAllowedTribeNotAdmin() public {    
-    vm.startPrank(player2);
-
-    vm.expectRevert("You are not authorized to set the allowed tribe");
-    world.call(
-      systemId,
-      abi.encodeCall(
-        CustomSmartTurretSystem.setAllowedTribe,
-        (smartTurretId, 2000)
-      )
-    );
-
-    vm.stopPrank();
-
-    uint256 fetchedAllowedTribeID = TurretAllowlist.get();
-
-    assertEq(fetchedAllowedTribeID, ALLOWED_TRIBE_ID, "Allowed Tribe ID should not have changed");
-  }
-
-  //Test setAllowedTribe
-  function testSetAllowedTribeRevertIfInvalidID() public {    
-    vm.startPrank(player);  // player is the turret owner
-
-    vm.expectRevert("Invalid Tribe ID");
-
-    world.call(
-      systemId,
-      abi.encodeCall(
-        CustomSmartTurretSystem.setAllowedTribe,
-        (smartTurretId, 200)
-      )
-    );
-
-    uint256 fetchedAllowedTribeID = TurretAllowlist.get();
-
-    assertEq(fetchedAllowedTribeID, ALLOWED_TRIBE_ID, "Allowed Tribe ID should not have changed");
   }
 
   //Test inProximity with a player that should not be targeted
@@ -525,6 +459,45 @@ contract SmartTurretTest is MudTest {
     );
 
     assertEq(returnTargetQueue.length, 1, "Target length should equal 1");
+  }
+
+  function testInProximityReflexCO86() public {
+    uint256 REFLEX_SHIP_TYPE_ID = 87847;
+    uint256 CO86_TRIBE_ID = 1000167;
+    uint256 CHARACTER_ID = 444;
+    address player4 = address(0x444);
+    uint256 characterSmartId = ObjectIdLib.calculateObjectId(tenantId, CHARACTER_ID);
+
+    vm.startPrank(player4, admin);
+    safeCreateCharacter(player4, characterSmartId, CHARACTER_ID, CO86_TRIBE_ID, "reflexCharacter");
+    vm.stopPrank();
+
+    TargetPriority[] memory priorityQueue = new TargetPriority[](0);
+    Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
+    
+    SmartTurretTarget memory turretTarget = SmartTurretTarget({
+      shipId: 1,
+      shipTypeId: REFLEX_SHIP_TYPE_ID,
+      characterId: characterSmartId,
+      hpRatio: 100,
+      shieldRatio: 100,
+      armorRatio: 100
+    });
+
+    //Run inProximity
+    TargetPriority[] memory returnTargetQueue = abi.decode(
+      world.call(
+        systemId,
+        abi.encodeCall(
+          CustomSmartTurretSystem.inProximity,
+          (smartTurretId, adminCharacterSmartId, priorityQueue, turret, turretTarget)
+        )
+      ),
+      (TargetPriority[])
+    );
+
+    assertEq(returnTargetQueue.length, 1, "Reflex in CO86 should be targeted");
+    assertEq(returnTargetQueue[0].target.characterId, characterSmartId, "Character ID should match");
   }
 
   function createAnchorAndOnline(uint256 smartAssemblyId, uint256 itemId, address ownerAddress) private {

@@ -12,7 +12,6 @@ import { Tenant, Characters, CharactersByAccount } from "@eveworld/world-v2/src/
 
 import { Utils } from "../src/systems/Utils.sol";
 import { SmartTurretSystem } from "../src/systems/SmartTurretSystem.sol";
-import { TurretAllowlist } from "../src/codegen/tables/TurretAllowlist.sol";
 
 contract ExecuteInProximity is Script {
   IBaseWorld world;
@@ -78,12 +77,6 @@ contract ExecuteInProximity is Script {
       adminCharacterId != 0 && playerCharacterId != 0, 
       "Characters do not exist. Run 'pnpm mock-data' to generate them."
     );
-
-    uint256 allowedTribe = TurretAllowlist.get();
-    require(allowedTribe != 0, "MUD Data not configured. Run 'pnpm configure' to configure it.");
-
-    console.log("-------------------\nTEST SETUP");
-    console.log("ALLOWED TRIBE FROM MUD: ", vm.toString(allowedTribe));
 
     uint256[] memory health = new uint256[](3);
     (health[0], health[1], health[2]) = (100, 100, 100);

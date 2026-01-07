@@ -35,11 +35,6 @@ contract ConfigureSmartTurret is Script {
     // This function can only be called by the owner of the smart turret
     smartTurretSystem.configureTurret(smartTurretId, systemId);
     
-    world.call(
-      systemId,
-      abi.encodeCall(CustomSmartTurretSystem.setAllowedTribe, (smartTurretId, allowedTribeId))
-    );
-
     vm.stopBroadcast();
   }
 }

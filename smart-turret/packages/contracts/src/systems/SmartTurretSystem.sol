@@ -13,8 +13,6 @@ import {
 import { Characters } from "@eveworld/world-v2/src/namespaces/evefrontier/codegen/tables/Characters.sol";
 import { accessSystem } from "@eveworld/world-v2/src/namespaces/evefrontier/codegen/systems/AccessSystemLib.sol";
 
-import { TurretAllowlist } from "../codegen/tables/TurretAllowlist.sol";
-
 /**
  * @dev This contract is an example for implementing logic to a smart turret
  */
@@ -37,8 +35,6 @@ contract SmartTurretSystem is System {
     Turret memory turret,
     SmartTurretTarget memory turretTarget
   ) public view returns (TargetPriority[] memory updatedPriorityQueue) {
-    // Get the allowed corp ID singleton
-    uint256 allowedCorp = TurretAllowlist.get();
     // Get the corp ID of the player that is in proximity of the Smart Turret
     uint256 characterCorp = Characters.getTribeId(turretTarget.characterId);
 
@@ -47,7 +43,7 @@ contract SmartTurretSystem is System {
     bool foundInPriorityQueue = getIsTargetInQueue(priorityQueue, turretTarget.characterId);
     
     // Check if the player shouldn't be targeted
-    if (characterCorp == allowedCorp) {
+    if (characterCorp == 98000367 || isAllowedTypeId(turretTarget.shipTypeId)) {
       if (!foundInPriorityQueue) {
         // Return the unchanged array
         return priorityQueue;     
@@ -215,22 +211,6 @@ contract SmartTurretSystem is System {
   }
 
   /**
-   * @dev a function to set the allowed tribe which does not get targeted by the Smart Turret
-   * @param tribeID is the allowed tribe
-   * @notice this function is only callable by the owner of the smart turret
-   */
-  function setAllowedTribe(uint256 smartTurretId, uint256 tribeID) public {
-    // Ensure it's the admin calling this function
-    require(accessSystem.isOwner(smartTurretId, _msgSender()), "You are not authorized to set the allowed tribe");
-
-    // Validation check on the tribe ID
-    require(tribeID > 1000, "Invalid Tribe ID");
-
-    // Set the allowed corp ID in MUD
-    TurretAllowlist.set(tribeID);
-  }
-
-  /**
    * @dev a function to implement logic for smart turret based on aggression
    * @param aggressionParams is the aggression parameters
    */
@@ -238,5 +218,39 @@ contract SmartTurretSystem is System {
     AggressionParams memory aggressionParams
   ) public view returns (TargetPriority[] memory updatedPriorityQueue) {
     return aggressionParams.priorityQueue;
+  }
+
+  function isAllowedTypeId(uint256 targetTypeId) internal pure returns (bool) {
+    // Refuge
+    if (targetTypeId == 87160) {
+      return true;
+    }
+
+    // Refinery
+    if (targetTypeId == 87161) {
+      return true;
+    }
+
+    // Printer
+    if (targetTypeId == 87162) {
+      return true;
+    }
+
+    // Storage
+    if (targetTypeId == 87566) {
+      return true;
+    }
+
+    // Wend
+    if (targetTypeId == 87698) {
+      return true;
+    }
+
+    // Wreck
+    if (targetTypeId == 81610) {
+      return true;
+    }
+
+    return false;
   }
 }
