@@ -55,7 +55,7 @@ contract SmartTurretTest is MudTest {
   uint256 smartTurretId;
 
   //Tribe that does not get targeted
-  uint256 ALLOWED_TRIBE_ID = 1500;
+  uint256 ALLOWED_TRIBE_ID = 98000367;
 
   //Character IDs
   uint256 ADMIN_CHARACTER_ID = 35000;

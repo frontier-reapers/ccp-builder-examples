@@ -18,3 +18,4 @@ mock-data/broadcast/
 mock-data/cache/
 
 packages/contracts/.env
+packages/contracts/.env.*
