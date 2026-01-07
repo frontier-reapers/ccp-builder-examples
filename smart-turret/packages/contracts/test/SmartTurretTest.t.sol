@@ -500,6 +500,44 @@ contract SmartTurretTest is MudTest {
     assertEq(returnTargetQueue[0].target.characterId, characterSmartId, "Character ID should match");
   }
 
+  function testInProximityWendCO86() public {
+    uint256 WEND_SHIP_TYPE_ID = 87698;
+    uint256 CO86_TRIBE_ID = 1000167;
+    uint256 CHARACTER_ID = 555;
+    address player5 = address(0x555);
+    uint256 characterSmartId = ObjectIdLib.calculateObjectId(tenantId, CHARACTER_ID);
+
+    vm.startPrank(player5, admin);
+    safeCreateCharacter(player5, characterSmartId, CHARACTER_ID, CO86_TRIBE_ID, "wendCharacter");
+    vm.stopPrank();
+
+    TargetPriority[] memory priorityQueue = new TargetPriority[](0);
+    Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
+    
+    SmartTurretTarget memory turretTarget = SmartTurretTarget({
+      shipId: 1,
+      shipTypeId: WEND_SHIP_TYPE_ID,
+      characterId: characterSmartId,
+      hpRatio: 100,
+      shieldRatio: 100,
+      armorRatio: 100
+    });
+
+    //Run inProximity
+    TargetPriority[] memory returnTargetQueue = abi.decode(
+      world.call(
+        systemId,
+        abi.encodeCall(
+          CustomSmartTurretSystem.inProximity,
+          (smartTurretId, adminCharacterSmartId, priorityQueue, turret, turretTarget)
+        )
+      ),
+      (TargetPriority[])
+    );
+
+    assertEq(returnTargetQueue.length, 0, "Wend in CO86 should NOT be targeted");
+  }
+
   function createAnchorAndOnline(uint256 smartAssemblyId, uint256 itemId, address ownerAddress) private {
     LocationData memory locationParams = LocationData({ solarSystemId: 30000042, x: 1001, y: 1001, z: 1001 });
 
