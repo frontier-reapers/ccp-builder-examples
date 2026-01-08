@@ -166,7 +166,7 @@ contract SmartTurretTest is MudTest {
         systemId,
         abi.encodeCall(
           CustomSmartTurretSystem.inProximity,
-          (smartTurretId, playerCharacterSmartId, priorityQueue, turret, turretTarget)
+          (smartTurretId, priorityQueue, turret, turretTarget)
         )
       ),
       (TargetPriority[])
@@ -198,7 +198,7 @@ contract SmartTurretTest is MudTest {
         systemId,
         abi.encodeCall(
           CustomSmartTurretSystem.inProximity,
-          (smartTurretId, playerCharacterSmartId, priorityQueue, turret, turretTarget)
+          (smartTurretId, priorityQueue, turret, turretTarget)
         )
       ),
       (TargetPriority[])
@@ -229,7 +229,7 @@ contract SmartTurretTest is MudTest {
         systemId,
         abi.encodeCall(
           CustomSmartTurretSystem.inProximity,
-          (smartTurretId, player3CharacterSmartId, priorityQueue, turret, turretTarget)
+          (smartTurretId, priorityQueue, turret, turretTarget)
         )
       ),
       (TargetPriority[])
@@ -271,7 +271,7 @@ contract SmartTurretTest is MudTest {
         systemId,
         abi.encodeCall(
           CustomSmartTurretSystem.inProximity,
-          (smartTurretId, playerCharacterSmartId, priorityQueue, turret, turretTarget2)
+          (smartTurretId, priorityQueue, turret, turretTarget2)
         )
       ),
       (TargetPriority[])
@@ -291,7 +291,7 @@ contract SmartTurretTest is MudTest {
         systemId,
         abi.encodeCall(
           CustomSmartTurretSystem.inProximity,
-          (smartTurretId, playerCharacterSmartId, priorityQueue, turret, turretTarget)
+          (smartTurretId, priorityQueue, turret, turretTarget)
         )
       ),
       (TargetPriority[])
@@ -490,7 +490,7 @@ contract SmartTurretTest is MudTest {
         systemId,
         abi.encodeCall(
           CustomSmartTurretSystem.inProximity,
-          (smartTurretId, adminCharacterSmartId, priorityQueue, turret, turretTarget)
+          (smartTurretId, priorityQueue, turret, turretTarget)
         )
       ),
       (TargetPriority[])
@@ -529,13 +529,13 @@ contract SmartTurretTest is MudTest {
         systemId,
         abi.encodeCall(
           CustomSmartTurretSystem.inProximity,
-          (smartTurretId, adminCharacterSmartId, priorityQueue, turret, turretTarget)
+          (smartTurretId, priorityQueue, turret, turretTarget)
         )
       ),
       (TargetPriority[])
     );
 
-    assertEq(returnTargetQueue.length, 0, "Wend in CO86 should NOT be targeted");
+    assertEq(returnTargetQueue.length, 0, "Wend in CO86 should not be targeted");
   }
 
   function createAnchorAndOnline(uint256 smartAssemblyId, uint256 itemId, address ownerAddress) private {

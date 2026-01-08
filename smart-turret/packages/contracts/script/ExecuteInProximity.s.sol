@@ -46,7 +46,7 @@ contract ExecuteInProximity is Script {
         systemId,
         abi.encodeCall(
           SmartTurretSystem.inProximity,
-          (smartTurretId, characterId, inputQueue, turret, turretTarget)
+          (smartTurretId, inputQueue, turret, turretTarget)
         )
       ),
       (TargetPriority[])

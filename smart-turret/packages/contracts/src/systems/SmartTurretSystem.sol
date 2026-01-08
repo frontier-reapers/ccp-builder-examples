@@ -20,7 +20,6 @@ contract SmartTurretSystem is System {
   /**
    * @dev a function to implement logic for Smart Turret based on proximity
    * @param smartTurretId The Smart Turret id
-   * @param characterId is the owner of the Smart Turret
    * @param priorityQueue is the queue of existing targets ordered by priority, index 0 being the lowest priority
    * @param turret is the turret data
    * @param turretTarget is the player in the zone
@@ -30,11 +29,10 @@ contract SmartTurretSystem is System {
    */
   function inProximity(
     uint256 smartTurretId,
-    uint256 characterId,
     TargetPriority[] memory priorityQueue,
     Turret memory turret,
     SmartTurretTarget memory turretTarget
-  ) public view returns (TargetPriority[] memory updatedPriorityQueue) {
+  ) public returns (TargetPriority[] memory updatedPriorityQueue) {
     // Get the corp ID of the player that is in proximity of the Smart Turret
     uint256 characterCorp = Characters.getTribeId(turretTarget.characterId);
 
@@ -216,7 +214,7 @@ contract SmartTurretSystem is System {
    */
   function aggression(
     AggressionParams memory aggressionParams
-  ) public view returns (TargetPriority[] memory updatedPriorityQueue) {
+  ) public returns (TargetPriority[] memory updatedPriorityQueue) {
     return aggressionParams.priorityQueue;
   }
 
