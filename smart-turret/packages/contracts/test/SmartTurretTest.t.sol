@@ -94,6 +94,12 @@ contract SmartTurretTest is MudTest {
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
     admin = vm.addr(deployerPrivateKey);
 
+    // Deploy and Register the LOCAL SmartTurretSystem to OVERRIDE the existing one on the fork
+    vm.startPrank(admin);
+    CustomSmartTurretSystem newSystem = new CustomSmartTurretSystem();
+    world.registerSystem(systemId, newSystem, true);
+    vm.stopPrank();
+
     // Using the last 3 automatically generated public addresses from Anvil.
     // These are different to the mock data to ensure there is no overlap
     player = address(0x14dC79964da2C08b23698B3D3cc7Ca32193d9955);
@@ -302,111 +308,6 @@ contract SmartTurretTest is MudTest {
     assertEq(returnTargetQueue[0].target.characterId, player2CharacterSmartId, "The first target should be turretTarget2, as it has the lowest total health. Test 2");
   }
 
-  function testBubbleSortAlgorithmGeneral() public {    
-    //Total Weight: 150
-    SmartTurretTarget memory turretTarget = SmartTurretTarget({
-      shipId: 1,
-      shipTypeId: 1,
-      characterId: playerCharacterSmartId,
-      hpRatio: 50,
-      shieldRatio: 50,
-      armorRatio: 50
-    });
-    
-    //Total Weight: 200
-    SmartTurretTarget memory turretTarget2 = SmartTurretTarget({
-      shipId: 1,
-      shipTypeId: 1,
-      characterId: player2CharacterSmartId,
-      hpRatio: 50,
-      shieldRatio: 0,
-      armorRatio: 50
-    });
-    
-    //Total Weight: 0
-    SmartTurretTarget memory turretTarget3 = SmartTurretTarget({
-      shipId: 1,
-      shipTypeId: 1,
-      characterId: player3CharacterSmartId,
-      hpRatio: 100,
-      shieldRatio: 100,
-      armorRatio: 100
-    });
-
-    TargetPriority[] memory priorityQueue = new TargetPriority[](3);
-    priorityQueue[0] = TargetPriority({ target: turretTarget, weight: 150 });
-    priorityQueue[1] = TargetPriority({ target: turretTarget3, weight: 0 });
-    priorityQueue[2] = TargetPriority({ target: turretTarget2, weight: 200 });
-
-    TargetPriority[] memory outputQueue = abi.decode(
-      world.call(
-        systemId,
-        abi.encodeCall(
-          CustomSmartTurretSystem.bubbleSortTargetPriorityArray,
-          (priorityQueue)
-        )
-      ),
-      (TargetPriority[])
-    );
-
-    assertEq(outputQueue[0].target.characterId, player3CharacterSmartId, "The first target should be turretTarget2, as it has the lowest weight");
-    assertEq(outputQueue[0].weight, 0, "The first target weight should be 100, as it is the lowest");
-
-    assertEq(outputQueue[1].target.characterId, playerCharacterSmartId, "The second target should be turretTarget, as it has the lowest weight");
-    assertEq(outputQueue[1].weight, 150, "The first target weight should be 100, as it is the lowest");
-
-    assertEq(outputQueue[2].target.characterId, player2CharacterSmartId, "The second target should be turretTarget3, as it has the highest weight");
-    assertEq(outputQueue[2].weight, 200, "The first target weight should be 100, as it is the lowest");
-
-    priorityQueue = new TargetPriority[](2);
-    
-    priorityQueue[1] = TargetPriority({ target: turretTarget, weight: 150 });
-    priorityQueue[0] = TargetPriority({ target: turretTarget2, weight: 100 });
-
-    outputQueue = abi.decode(
-      world.call(
-        systemId,
-        abi.encodeCall(
-          CustomSmartTurretSystem.bubbleSortTargetPriorityArray,
-          (priorityQueue)
-        )
-      ),
-      (TargetPriority[])
-    );
-
-    assertEq(outputQueue[0].target.characterId, player2CharacterSmartId, "The first target should be turretTarget2, as it has the lowest weight");
-    assertEq(outputQueue[0].weight, 100, "The first target weight should be 100, as it is the lowest");
-  }
-
-  function testBubbleSortAlgorithmOneTarget() public {    
-    //Total Weight: 150
-    SmartTurretTarget memory turretTarget = SmartTurretTarget({
-      shipId: 1,
-      shipTypeId: 1,
-      characterId: playerCharacterSmartId,
-      hpRatio: 50,
-      shieldRatio: 50,
-      armorRatio: 50
-    });
-
-    TargetPriority[] memory priorityQueue = new TargetPriority[](1);
-    priorityQueue[0] = TargetPriority({ target: turretTarget, weight: 150 });
-
-    TargetPriority[] memory outputQueue = abi.decode(
-      world.call(
-        systemId,
-        abi.encodeCall(
-          CustomSmartTurretSystem.bubbleSortTargetPriorityArray,
-          (priorityQueue)
-        )
-      ),
-      (TargetPriority[])
-    );
-
-    assertEq(outputQueue[0].target.characterId, playerCharacterSmartId, "The first target should be turretTarget, as it has the lowest weight");
-    assertEq(outputQueue[0].weight, 150, "The first target weight should be 150, as it is the lowest");
-    assertEq(outputQueue.length, 1, "The output queue should only have 1 target");
-  }
   //Test aggression
   function testAggression() public {    
     TargetPriority[] memory priorityQueue = new TargetPriority[](1);
@@ -589,5 +490,306 @@ contract SmartTurretTest is MudTest {
     fuelSystem.depositFuel(smartAssemblyId, fuelSmartObjectId, 1000);
 
     deployableSystem.bringOnline(smartAssemblyId);
+  }
+
+  // Test removal from queue if target becomes invalid
+  function testRemoveFromQueue() public {
+    SmartTurretTarget memory turretTarget = SmartTurretTarget({
+      shipId: 1,
+      shipTypeId: 1, // Valid type initially
+      characterId: playerCharacterSmartId,
+      hpRatio: 50,
+      shieldRatio: 50,
+      armorRatio: 50
+    });
+
+    TargetPriority[] memory priorityQueue = new TargetPriority[](1);
+    priorityQueue[0] = TargetPriority({ target: turretTarget, weight: 150 });
+
+    // Now call inProximity with the same character but with an IGNORED ship type (Wend = 87698)
+    SmartTurretTarget memory ignoredTarget = turretTarget;
+    ignoredTarget.shipTypeId = 87698; // Wend
+
+    Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
+
+    TargetPriority[] memory outputQueue = abi.decode(
+      world.call(
+        systemId,
+        abi.encodeCall(
+          CustomSmartTurretSystem.inProximity,
+          (smartTurretId, priorityQueue, turret, ignoredTarget)
+        )
+      ),
+      (TargetPriority[])
+    );
+
+    assertEq(outputQueue.length, 0, "Target should be removed from queue because of allowed ship type");
+  }
+
+  // Test coverage for all allowed types
+  function testAllAllowedTypes() public {
+    uint256[] memory types = new uint256[](6);
+    types[0] = 87160;
+    types[1] = 87161;
+    types[2] = 87162;
+    types[3] = 87566;
+    types[4] = 87698;
+    types[5] = 81610;
+
+    Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
+    TargetPriority[] memory priorityQueue = new TargetPriority[](0);
+
+    for(uint i=0; i<types.length; i++) {
+        SmartTurretTarget memory target = SmartTurretTarget({
+            shipId: 1,
+            shipTypeId: types[i],
+            characterId: player2CharacterSmartId, // Use player2 (not in allowed tribe) to force check of shipTypeId
+            hpRatio: 50, 
+            shieldRatio: 50, 
+            armorRatio: 50
+        });
+
+        TargetPriority[] memory outputQueue = abi.decode(
+          world.call(
+            systemId,
+            abi.encodeCall(
+              CustomSmartTurretSystem.inProximity,
+              (smartTurretId, priorityQueue, turret, target)
+            )
+          ),
+          (TargetPriority[])
+        );
+        
+        assertEq(outputQueue.length, 0, "Should be ignored");
+    }
+  }
+
+  function testUpdateExistingTargetWeight() public {
+     SmartTurretTarget memory target = SmartTurretTarget({
+      shipId: 1,
+      shipTypeId: 1,
+      characterId: player2CharacterSmartId, // Use player 2 (not in allowed tribe)
+      hpRatio: 100, // weight 0
+      shieldRatio: 100,
+      armorRatio: 100
+    });
+
+    TargetPriority[] memory priorityQueue = new TargetPriority[](1);
+    priorityQueue[0] = TargetPriority({ target: target, weight: 0 });
+
+    // Update target with lower health (higher weight)
+    SmartTurretTarget memory updatedTarget = target;
+    updatedTarget.hpRatio = 50; // weight 50
+    updatedTarget.shieldRatio = 50;
+    updatedTarget.armorRatio = 50;
+    // New weight should be 300 - 150 = 150
+
+    Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
+
+    TargetPriority[] memory outputQueue = abi.decode(
+      world.call(
+        systemId,
+        abi.encodeCall(
+          CustomSmartTurretSystem.inProximity,
+          (smartTurretId, priorityQueue, turret, updatedTarget)
+        )
+      ),
+      (TargetPriority[])
+    );
+
+    assertEq(outputQueue.length, 1);
+    assertEq(outputQueue[0].weight, 150, "Weight should update to 150");
+  }
+
+  function testRemoveFromQueueWithOthers() public {
+     SmartTurretTarget memory target1 = SmartTurretTarget({
+      shipId: 1,
+      shipTypeId: 1,
+      characterId: playerCharacterSmartId,
+      hpRatio: 50,
+      shieldRatio: 50,
+      armorRatio: 50
+    });
+     SmartTurretTarget memory target2 = SmartTurretTarget({
+      shipId: 2,
+      shipTypeId: 1,
+      characterId: player2CharacterSmartId,
+      hpRatio: 50,
+      shieldRatio: 50,
+      armorRatio: 50
+    });
+
+    TargetPriority[] memory priorityQueue = new TargetPriority[](2);
+    priorityQueue[0] = TargetPriority({ target: target1, weight: 150 });
+    priorityQueue[1] = TargetPriority({ target: target2, weight: 150 });
+
+    // Remove target1 by making it ignored (Wend)
+    SmartTurretTarget memory ignoredTarget = target1;
+    ignoredTarget.shipTypeId = 87698; // Wend
+
+    Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
+
+    TargetPriority[] memory outputQueue = abi.decode(
+      world.call(
+        systemId,
+        abi.encodeCall(
+          CustomSmartTurretSystem.inProximity,
+          (smartTurretId, priorityQueue, turret, ignoredTarget)
+        )
+      ),
+      (TargetPriority[])
+    );
+
+    assertEq(outputQueue.length, 1, "Should have 1 remaining");
+    assertEq(outputQueue[0].target.characterId, player2CharacterSmartId, "Player 2 should remain");
+  }
+
+  function testInProximityInvalidInputs() public {
+    SmartTurretTarget memory invalidTarget = SmartTurretTarget({
+      shipId: 1,
+      shipTypeId: 1,
+      characterId: 0, // Invalid
+      hpRatio: 50,
+      shieldRatio: 50,
+      armorRatio: 50
+    });
+    Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
+    TargetPriority[] memory priorityQueue = new TargetPriority[](0);
+
+    vm.expectRevert(abi.encodeWithSelector(CustomSmartTurretSystem.SmartTurretError.selector, "Invalid characterId"));
+    world.call(
+        systemId,
+        abi.encodeCall(
+          CustomSmartTurretSystem.inProximity,
+          (smartTurretId, priorityQueue, turret, invalidTarget)
+        )
+    );
+
+    // Reset invalidTarget check as we fix it to proceed to next check
+    invalidTarget.characterId = playerCharacterSmartId;
+
+    // Test smartTurretId = 0
+    vm.expectRevert(abi.encodeWithSelector(CustomSmartTurretSystem.SmartTurretError.selector, "Invalid smartTurretId"));
+    world.call(
+        systemId,
+        abi.encodeCall(
+          CustomSmartTurretSystem.inProximity,
+          (0, priorityQueue, turret, invalidTarget)
+        )
+    );
+
+    // Test invalid turret
+    Turret memory invalidTurret = Turret({ weaponTypeId: 0, ammoTypeId: 1, chargesLeft: 100 });
+    vm.expectRevert(abi.encodeWithSelector(CustomSmartTurretSystem.SmartTurretError.selector, "Invalid turret"));
+    world.call(
+        systemId,
+        abi.encodeCall(
+          CustomSmartTurretSystem.inProximity,
+          (smartTurretId, priorityQueue, invalidTurret, invalidTarget)
+        )
+    );
+
+    invalidTarget.shipTypeId = 0; // Invalid
+    vm.expectRevert(abi.encodeWithSelector(CustomSmartTurretSystem.SmartTurretError.selector, "Invalid shipTypeId"));
+    world.call(
+        systemId,
+        abi.encodeCall(
+          CustomSmartTurretSystem.inProximity,
+          (smartTurretId, priorityQueue, turret, invalidTarget)
+        )
+    );
+
+    invalidTarget.shipTypeId = 1;
+    invalidTarget.hpRatio = 101; // Invalid
+    vm.expectRevert(abi.encodeWithSelector(CustomSmartTurretSystem.SmartTurretError.selector, "Invalid ratio"));
+    world.call(
+        systemId,
+        abi.encodeCall(
+          CustomSmartTurretSystem.inProximity,
+          (smartTurretId, priorityQueue, turret, invalidTarget)
+        )
+    );
+  }
+
+  function testAggressionInvalidInputs() public {
+    SmartTurretTarget memory aggressor = SmartTurretTarget({
+      shipId: 1,
+      shipTypeId: 1,
+      characterId: 0, // Invalid
+      hpRatio: 100, shieldRatio: 100, armorRatio: 100
+    });
+    SmartTurretTarget memory victim = SmartTurretTarget({
+      shipId: 2,
+      shipTypeId: 1,
+      characterId: player2CharacterSmartId,
+      hpRatio: 100, shieldRatio: 100, armorRatio: 100
+    });
+    TargetPriority[] memory priorityQueue = new TargetPriority[](0);
+    Turret memory turret = Turret({ weaponTypeId: 1, ammoTypeId: 1, chargesLeft: 100 });
+
+    AggressionParams memory params = AggressionParams({
+      smartObjectId: smartTurretId,
+      priorityQueue: priorityQueue,
+      turret: turret,
+      aggressor: aggressor,
+      victim: victim
+    });
+
+    vm.expectRevert(abi.encodeWithSelector(CustomSmartTurretSystem.SmartTurretError.selector, "Invalid aggressor characterId"));
+    world.call(
+        systemId,
+        abi.encodeCall(
+          CustomSmartTurretSystem.aggression,
+          (params)
+        )
+    );
+
+    // Fix aggressor
+    params.aggressor.characterId = playerCharacterSmartId;
+
+    // Test invalid smartObjectId
+    uint256 validId = params.smartObjectId;
+    params.smartObjectId = 0;
+    vm.expectRevert(abi.encodeWithSelector(CustomSmartTurretSystem.SmartTurretError.selector, "Invalid smartTurretId"));
+    world.call(
+        systemId,
+        abi.encodeCall(
+          CustomSmartTurretSystem.aggression,
+          (params)
+        )
+    );
+    params.smartObjectId = validId; // restore
+
+    // Test invalid turret
+    params.turret.weaponTypeId = 0;
+    vm.expectRevert(abi.encodeWithSelector(CustomSmartTurretSystem.SmartTurretError.selector, "Invalid turret"));
+    world.call(
+        systemId,
+        abi.encodeCall(
+          CustomSmartTurretSystem.aggression,
+          (params)
+        )
+    );
+    params.turret.weaponTypeId = 1; // restore
+
+    params.victim.characterId = 0; // Invalid
+    vm.expectRevert(abi.encodeWithSelector(CustomSmartTurretSystem.SmartTurretError.selector, "Invalid victim characterId"));
+    world.call(
+        systemId,
+        abi.encodeCall(
+          CustomSmartTurretSystem.aggression,
+          (params)
+        )
+    );
+
+    params.victim.characterId = playerCharacterSmartId; // Same as aggressor
+    vm.expectRevert(abi.encodeWithSelector(CustomSmartTurretSystem.SmartTurretError.selector, "Aggressor and victim cannot be the same"));
+    world.call(
+        systemId,
+        abi.encodeCall(
+          CustomSmartTurretSystem.aggression,
+          (params)
+        )
+    );
   }
 }

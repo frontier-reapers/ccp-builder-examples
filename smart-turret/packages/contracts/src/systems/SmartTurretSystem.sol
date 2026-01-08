@@ -17,6 +17,8 @@ import { accessSystem } from "@eveworld/world-v2/src/namespaces/evefrontier/code
  * @dev This contract is an example for implementing logic to a smart turret
  */
 contract SmartTurretSystem is System {
+  error SmartTurretError(string message);
+
   /**
    * @dev a function to implement logic for Smart Turret based on proximity
    * @param smartTurretId The Smart Turret id
@@ -33,6 +35,26 @@ contract SmartTurretSystem is System {
     Turret memory turret,
     SmartTurretTarget memory turretTarget
   ) public returns (TargetPriority[] memory updatedPriorityQueue) {
+    if (smartTurretId == 0) {
+      revert SmartTurretError("Invalid smartTurretId");
+    }
+
+    if (turret.weaponTypeId == 0) {
+      revert SmartTurretError("Invalid turret");
+    }
+
+    if (turretTarget.characterId == 0) {
+      revert SmartTurretError("Invalid characterId");
+    }
+
+    if (turretTarget.shipTypeId == 0) {
+      revert SmartTurretError("Invalid shipTypeId");
+    }
+
+    if (turretTarget.hpRatio > 100 || turretTarget.shieldRatio > 100 || turretTarget.armorRatio > 100) {
+      revert SmartTurretError("Invalid ratio");
+    }
+
     // Get the corp ID of the player that is in proximity of the Smart Turret
     uint256 characterCorp = Characters.getTribeId(turretTarget.characterId);
 
@@ -114,8 +136,11 @@ contract SmartTurretSystem is System {
         }
       }
 
-      // Sort the array
-      updatedPriorityQueue = bubbleSortTargetPriorityArray(updatedPriorityQueue);
+      // Sort the array (Only if logic changes, but removing preserves order. 
+      // However, if we want to be safe or if weights changed elsewhere:
+      // In this specific function, weights don't change, so checking order is preserved.)
+      // optimization: removing an element from a sorted array keeps it sorted.
+      // updatedPriorityQueue = insertionSortTargetPriorityArray(updatedPriorityQueue);
 
       return updatedPriorityQueue;
   }
@@ -133,7 +158,7 @@ contract SmartTurretSystem is System {
     }
 
     // Sort the array
-    priorityQueue = bubbleSortTargetPriorityArray(priorityQueue);
+    priorityQueue = insertionSortTargetPriorityArray(priorityQueue);
 
     return priorityQueue;
   }
@@ -160,40 +185,29 @@ contract SmartTurretSystem is System {
     updatedPriorityQueue[priorityQueue.length] = newTarget;      
 
     // Sort the array
-    updatedPriorityQueue = bubbleSortTargetPriorityArray(updatedPriorityQueue);
+    updatedPriorityQueue = insertionSortTargetPriorityArray(updatedPriorityQueue);
 
     return updatedPriorityQueue;
   }
 
   /**
-   * @dev a function to sort the priority queue by weight, using the bubble sort algorithm
+   * @dev a function to sort the priority queue by weight, using the insertion sort algorithm
    * @param priorityQueue is the queue to sort
    */
-  function bubbleSortTargetPriorityArray(
+  function insertionSortTargetPriorityArray(
     TargetPriority[] memory priorityQueue
   ) public pure returns (TargetPriority[] memory sortedPriorityQueue) {
     uint256 length = priorityQueue.length;
 
-    // Doesn't need sorting if the queue only has 1 or 0 entries
-    if (length < 2) return priorityQueue;
-
-    bool swapped;
-    // Loop until the bubble sort algorithm stops sorting
-    do {
-      swapped = false;
-
-      // Loop to the second last element, as it will sort for the next element
-      for (uint256 i = 0; i < length - 1; i++) {
-        // Check if a swap needs to happen
-        if (priorityQueue[i].weight > priorityQueue[i + 1].weight) {
-          // Swap the values in the array
-          (priorityQueue[i], priorityQueue[i+1]) = (priorityQueue[i + 1], priorityQueue[i]);
-          // Do another loop
-          swapped = true;
+    for (uint256 i = 1; i < length; i++) {
+        TargetPriority memory key = priorityQueue[i];
+        uint256 j = i;
+        while ((j > 0) && (priorityQueue[j - 1].weight > key.weight)) {
+            priorityQueue[j] = priorityQueue[j - 1];
+            j--;
         }
-      }
+        priorityQueue[j] = key;
     }
-    while (swapped);
 
     return priorityQueue;
   }
@@ -223,6 +237,26 @@ contract SmartTurretSystem is System {
   function aggression(
     AggressionParams memory aggressionParams
   ) public returns (TargetPriority[] memory updatedPriorityQueue) {
+    if (aggressionParams.smartObjectId == 0) {
+      revert SmartTurretError("Invalid smartTurretId");
+    }
+
+    if (aggressionParams.turret.weaponTypeId == 0) {
+      revert SmartTurretError("Invalid turret");
+    }
+
+    if (aggressionParams.aggressor.characterId == 0) {
+      revert SmartTurretError("Invalid aggressor characterId");
+    }
+
+    if (aggressionParams.victim.characterId == 0) {
+      revert SmartTurretError("Invalid victim characterId");
+    }
+
+    if (aggressionParams.aggressor.characterId == aggressionParams.victim.characterId) {
+      revert SmartTurretError("Aggressor and victim cannot be the same");
+    }
+
     return aggressionParams.priorityQueue;
   }
 

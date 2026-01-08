@@ -20,10 +20,8 @@ contract ConfigureSmartTurret is Script {
     vm.startBroadcast(deployerPrivateKey);
 
     StoreSwitch.setStoreAddress(worldAddress);
-    IBaseWorld world = IBaseWorld(worldAddress);
 
     uint256 smartTurretId = vm.envUint("SMART_TURRET_ID");
-    uint256 allowedTribeId = vm.envUint("ALLOWED_TRIBE_ID");
 
     require(
       SmartAssembly.lengthAssemblyType(smartTurretId) != 0,
