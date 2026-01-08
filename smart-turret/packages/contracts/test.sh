@@ -26,6 +26,13 @@ echo -e "${ORANGE}Character ID:${NC} $CHAR_ID"
 echo -e "${ORANGE}Turret ID:${NC} $TURRET_ID"
 echo -e "${ORANGE}Ship Type ID:${NC} $SHIP_TYPE_ID"
 
+FROM_ARG=""
+if [ -n "${PRIVATE_KEY:-}" ]; then
+  SENDER=$(cast wallet address --private-key "$PRIVATE_KEY")
+  echo -e "${ORANGE}Sender:${NC} $SENDER"
+  FROM_ARG="--from $SENDER"
+fi
+
 # Call data for inProximity
 # SmartTurretTarget: (shipId:1, shipTypeId:SHIP_TYPE_ID, characterId:CHAR_ID, hp:100, shield:100, armor:100)
 # Turret: (1, 1, 100)
@@ -34,7 +41,7 @@ CALLDATA=$(cast calldata "inProximity(uint256,((uint256,uint256,uint256,uint256,
   $TURRET_ID "[]" "(1,1,100)" "(1,$SHIP_TYPE_ID,$CHAR_ID,100,100,100)")
 
 # Execute the call via the World
-RESULT=$(cast call $WORLD_ADDRESS "call(bytes32,bytes)(bytes)" "$SYSTEM_ID" "$CALLDATA" --rpc-url $RPC_URL)
+RESULT=$(cast call $WORLD_ADDRESS "call(bytes32,bytes)(bytes)" "$SYSTEM_ID" "$CALLDATA" --rpc-url $RPC_URL $FROM_ARG)
 
 echo -e "${ORANGE}Raw Result:${NC} $RESULT"
 
