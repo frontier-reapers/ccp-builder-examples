@@ -57,6 +57,12 @@ contract SmartTurretSystem is System {
     // Weight is not currently used in-game as the game uses the position of elements in the array, however we set it for the bubble sort algorithm to use
     // If already in the queue, update the weight and sort the array
     if (foundInPriorityQueue) {
+      for (uint i = 0; i < priorityQueue.length; i++) {
+        if (priorityQueue[i].target.characterId == turretTarget.characterId) {
+          priorityQueue[i].target = turretTarget;
+          break;
+        }
+      }
       return updateWeight(priorityQueue);
     }
 
@@ -100,9 +106,11 @@ contract SmartTurretSystem is System {
       updatedPriorityQueue = new TargetPriority[](priorityQueue.length - 1);
 
       // Loop over the queue and only set if not the character
+      uint256 j = 0;
       for (uint i = 0; i < priorityQueue.length; i++) {
         if (priorityQueue[i].target.characterId != characterId) {
-          updatedPriorityQueue[i] = priorityQueue[i];
+          updatedPriorityQueue[j] = priorityQueue[i];
+          j++;
         }
       }
 
